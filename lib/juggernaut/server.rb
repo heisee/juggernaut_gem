@@ -286,7 +286,7 @@ module Juggernaut
         if channels = @request[:channels]
           add_channels(channels)
         end
-        if !@client.subscription_request(@channels)
+        if !@client.subscription_request(channels)
           raise UnauthorisedSubscription, @client
         end
       end
@@ -295,7 +295,7 @@ module Juggernaut
         if channels = @request[:channels]
           remove_channels!(channels)
         end
-        @client.logout_connection_request(@channels)
+        @client.logout_connection_request(channels)
       end
 
       def subscribe_command
