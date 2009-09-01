@@ -101,9 +101,11 @@ module Juggernaut
 
     def to_json
       {
-        :client_id  => @id, 
-        :num_connections => @connections.size,
-        :session_id => @session_id
+        :client_id => @id,
+        :session_id => @session_id,
+        :connections => @connections.map do |em|
+          {:channels=> em.channels, :status=> em.status, :logout_timeout=>em.logout_timeout, :login_time=>em.login_time }
+        end
       }.to_json
     end
 

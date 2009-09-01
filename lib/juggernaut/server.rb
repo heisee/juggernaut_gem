@@ -50,6 +50,7 @@ module Juggernaut
     attr_reader   :messages
     attr_reader   :connected
     attr_reader   :logout_timeout
+    attr_reader   :login_time
     attr_reader   :status
     attr_reader   :channels
     attr_reader   :client
@@ -63,6 +64,7 @@ module Juggernaut
       @current_msg_id = 0
       @connected      = true
       @logout_timeout = nil
+      @login_time = Time.now
       @buffer = ''
     end
     
@@ -124,6 +126,10 @@ module Juggernaut
           broadcast_command
         when :subscribe
           subscribe_command
+        when :add_channels
+          add_channels_command
+        when :remove_channels
+          remove_channels_command
         when :query
           query_command
         when :noop
@@ -276,6 +282,22 @@ module Juggernaut
         logger.debug "NOOP"
       end
     
+      def add_channels_command
+        if channels = @request[:channels]
+          add_channels(channels)
+        end
+        if !@client.subscription_request(@channels)
+          raise UnauthorisedSubscription, @client
+        end
+      end
+      
+      def remove_channels_command
+        if channels = @request[:channels]
+          remove_channels!(channels)
+        end
+        @client.logout_connection_request(@channels)
+      end
+
       def subscribe_command
         logger.debug "SUBSCRIBE: #{@request.inspect}"
         
