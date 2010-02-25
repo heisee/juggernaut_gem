@@ -132,6 +132,27 @@ class TestClient < Test::Unit::TestCase
         assert_equal true, @client.send(:post_request, EXAMPLE_URL, %w(master slave))
       end
       
+      should "include client counts for channels when send_clients_per_channel is true" do
+        Juggernaut.options[:send_clients_per_channel] = true
+        @client.stubs(:channels).returns(%w{ master slave })
+        @client.stubs(:has_channels?).with(%w{ master }).returns(true)
+        @client.stubs(:has_channels?).with(%w{ slave }).returns(true)
+        Net::HTTP.any_instance.
+          expects(:post).
+          with("/callbacks/example", "client_id=jonny&session_id=#{@request[:session_id]}&channels[]=master&channels[]=slave&clients[master]=1&clients[slave]=1", {"User-Agent" => "Ruby/#{RUBY_VERSION}"}).
+          returns([Net::HTTPOK.new('1.1', '200', 'OK'), ''])
+        assert_equal true, @client.send(:post_request, EXAMPLE_URL, %w(master slave))
+      end
+      
+      should "not include client counts for channels when send_clients_per_channel is false" do
+        Juggernaut.options[:send_clients_per_channel] = false
+        Net::HTTP.any_instance.
+          expects(:post).
+          with("/callbacks/example", "client_id=jonny&session_id=#{@request[:session_id]}&channels[]=master&channels[]=slave", {"User-Agent" => "Ruby/#{RUBY_VERSION}"}).
+          returns([Net::HTTPOK.new('1.1', '200', 'OK'), ''])
+        assert_equal true, @client.send(:post_request, EXAMPLE_URL, %w(master slave))
+      end
+      
       should "return false on an internal server error" do
         Net::HTTP.any_instance.expects(:post).returns([Net::HTTPInternalServerError.new('1.1', '500', 'Internal Server Error'), ''])
         assert_equal false, @client.send(:post_request, EXAMPLE_URL, %w(master slave))
@@ -171,6 +192,22 @@ class TestClient < Test::Unit::TestCase
       
     end
     
+    context "all_channels" do
+      should "return the unique list of channels for all clients" do
+        @s1.stubs(:channels).returns(%w(master slave1))
+        s2 = DummySubscriber.new
+        s2.stubs(:channels).returns(%w(master slave2))
+        @client.add_new_connection(s2)
+        
+        s3 = DummySubscriber.new
+        s3.stubs(:channels).returns(%w(master slave1))
+        s3_request = { :client_id => "client_2", :session_id => rand(1_000_000).to_s(16) }
+        Juggernaut::Client.find_or_create(s3, s3_request)
+        
+        assert_equal %w{ master slave1 slave2 }, Juggernaut::Client.all_channels
+      end
+    end
+
   end
   
 end

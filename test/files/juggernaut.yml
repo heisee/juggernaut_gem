@@ -83,6 +83,12 @@
      #
      # :store_messages: false
 
+     # send_clients_per_channel defaults to false. If this option is true, the count of clients for all channels
+     # will be sent in the params posted to subscription_url, logout_connection_url, and logout_url. 
+     # Counts are passed as clients[<channel>]=<count>
+     #
+     # :send_clients_per_channel: false
+
      # === Server ===
 
      # Host defaults to "0.0.0.0". You shouldn't need to change this.

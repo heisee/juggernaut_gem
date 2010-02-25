@@ -30,6 +30,10 @@ module Juggernaut
         @@clients
       end
 
+      def all_channels
+        find_all.map { |c| c.channels }.flatten.uniq
+      end
+
       def find(&block)
         @@clients.select(&block).uniq
       end
@@ -216,6 +220,11 @@ module Juggernaut
       params << "client_id=#{id}" if id
       params << "session_id=#{session_id}" if session_id
       channels.each {|chan| params << "channels[]=#{chan}" }
+      
+      Juggernaut::Client.all_channels.each do |channel| 
+        params << "clients[#{channel}]=#{Juggernaut::Client.find_by_channels([channel]).size}"
+      end if self.options[:send_clients_per_channel]
+      
       headers = {"User-Agent" => "Ruby/#{RUBY_VERSION}"}
       begin
         http = Net::HTTP.new(uri.host, uri.port)
